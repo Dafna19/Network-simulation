@@ -43,12 +43,22 @@ public class Main {
             double x = time.get(i);
             start += x;
             end = start + delays.get(i);
-            for (int k = new Double(Math.ceil(start)).intValue(); k < Math.round(end); k++)
-                countN[k]++;
+            for (int k = new Double(Math.ceil(start)).intValue(); k < Math.ceil(end); k++)
+                try {
+                    countN[k]++;
+                } catch (Exception e){
+                    System.out.println(e.toString());
+                    System.out.println("countN size = " + countN.length);
+                    System.out.println("k = " + k);
+                    System.out.println("start = " + start);
+                    System.out.println("end = " + end);
+                    System.out.println("fullTime = " + fullTime);
+                }
+
         }
 
-        for (int i = 0; i < countN.length; i++)       System.out.println(countN[i]);
-
+        for (int i = 0; i < countN.length; i++)       System.out.print(" ["+i+"] "+ countN[i]);
+        System.out.println();
         double d_th = (2 - lambda) / (2 * (1 - lambda));
         double N_th = lambda * d_th;
 
