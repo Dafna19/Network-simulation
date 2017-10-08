@@ -1,5 +1,6 @@
 /**
  * моделирование синхрон. и асинхр. системы M|D|1
+ * + лаба3 - доступ с разделением времени (Time Division Multiple Access)
  */
 
 import java.util.ArrayList;
@@ -7,10 +8,12 @@ import java.util.ArrayList;
 public class Main {
     public static void main(String[] args) {
         double[] lambda = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
-        for (double l : lambda) {
+        /*for (double l : lambda) { //допуски
             async(l);
             sync(l);
-        }
+        }*/
+        TDMA(0.5, 2);
+
     }
 
     private static void async(double lambda) {
@@ -126,9 +129,67 @@ public class Main {
         System.out.println("N (pract) = " + N / countN.size());
     }
 
-    private static int I(int N) {
-        if (N > 0)
-            return 1;
-        return 0;
+    //доступ с разделением времени, M -кол-во абонентов
+    private static void TDMA(double lambda, int M) {
+
+        int Mes = 10; //кол-во сообщений
+        ArrayList<Message> time = new ArrayList<>(); //время между появлениями сообщений
+        ArrayList<Double> delays = new ArrayList<>(); //время пребывания сообщений в сист
+        double[] end = new double[M]; //время выхода последнего сообщения для каждого Абонента
+
+        for (int i = 0; i < Mes; i++) {
+            double x = -Math.log(Math.random()) / lambda; // промежуток времени перед этим сообщением
+            int a = Math.round(new Double((M - 1) * Math.random()).floatValue()); // номер абонента, у которого это сообщение
+            time.add(new Message(x, a));
+        }
+        System.out.println("time: " + time);
+
+        double start = 0;
+        // считаем задержку
+        for (int i = 0; i < Mes; i++) {
+            double x = time.get(i).time, d, D1, D2;
+            int target = time.get(i).subscriber; //номер нужного нам окна
+            int window; // номер текущего окна
+
+            start += x;
+            D1 = Math.ceil(start) - start;
+            if (D1 == 0) D1 = 1; //почти невозможная ситуация
+            window = new Double(Math.floor(start)).intValue() % M;
+            if (window >= target) {
+                D2 = M - 1 - window + target;
+            } else { //if (window < target) {
+                D2 = target - 1 - window;
+            }
+            d = D1 + D2 + 1; // общая задержка
+            if ((start + d) <= end[target]) //если нужное окно занято
+                d = end[target] + M - start;
+
+            end[target] = start + d;
+
+            System.out.println(i);
+            System.out.println("start = " + start);
+            System.out.println("window № " + window);
+            System.out.println("target = " + target);
+            System.out.println("end = " + end[window]);
+            System.out.println("d = " + d);
+            System.out.println();
+        }
+
     }
+
+
+    private static class Message {
+        double time; //время между появлениями сообщений
+        int subscriber; //номер абонента
+
+        Message(double d, int l) {
+            time = d;
+            subscriber = l;
+        }
+
+        public String toString() {
+            return ("<" + time + ", " + subscriber + ">");
+        }
+    }
+
 }
