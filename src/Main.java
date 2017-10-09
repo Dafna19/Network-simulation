@@ -8,11 +8,23 @@ import java.util.ArrayList;
 public class Main {
     public static void main(String[] args) {
         double[] lambda = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
-        /*for (double l : lambda) { //допуски
-            async(l);
-            sync(l);
-        }*/
-        TDMA(0.5, 2);
+        for (double l : lambda) { //допуски
+//            async(l);
+
+            //подать одинаковый поток
+            ArrayList<Double> time = new ArrayList<>();
+            ArrayList<Message> time1 = new ArrayList<>();
+            int count = 100000, M = 4;
+            for (int i = 0; i < count; i++){
+                double x = -Math.log(Math.random()) / l;
+                int a = Math.round(new Double((M - 1) * Math.random()).floatValue());
+                time.add(x);
+                time1.add(new Message(x, a));
+            }
+
+            sync(l, time, count);
+            TDMA(l, M, time1, count);
+        }
 
     }
 
@@ -75,16 +87,17 @@ public class Main {
 
     }
 
-    private static void sync(double lambda) {
-        int M = 100000; //кол-во сообщений
-        ArrayList<Double> time = new ArrayList<>(); //время между появлениями сообщений
+    private static void sync(double lambda, ArrayList<Double> t, int count) {
+        int M = count; //кол-во сообщений
+        ArrayList<Double> time = t;//new ArrayList<>(); //время между появлениями сообщений
         ArrayList<Double> delays = new ArrayList<>(); //время пребывания сообщений в сист
         float fullTime = 0;
         double D = 1; // общая задержка
 
         for (int i = 0; i < M; i++) {
-            double x = -Math.log(Math.random()) / lambda;
-            time.add(x);
+//            double x = -Math.log(Math.random()) / lambda;
+//            time.add(x);
+            double x = time.get(i);//временно!!!
             fullTime += x;
         }
 
@@ -125,24 +138,24 @@ public class Main {
         System.out.println("d (theory) = " + d_th);
         System.out.println("d (pract) = " + D / M);
 
-        System.out.println("N (theory) = " + N_th);
-        System.out.println("N (pract) = " + N / countN.size());
+//        System.out.println("N (theory) = " + N_th);
+//        System.out.println("N (pract) = " + N / countN.size());
     }
 
     //доступ с разделением времени, M -кол-во абонентов
-    private static void TDMA(double lambda, int M) {
+    private static void TDMA(double lambda, int M, ArrayList<Message> t, int count) {
 
-        int Mes = 10; //кол-во сообщений
-        ArrayList<Message> time = new ArrayList<>(); //время между появлениями сообщений
+        int Mes = count; //кол-во сообщений
+        ArrayList<Message> time = t;//new ArrayList<>(); //время между появлениями сообщений
         ArrayList<Double> delays = new ArrayList<>(); //время пребывания сообщений в сист
         double[] end = new double[M]; //время выхода последнего сообщения для каждого Абонента
 
-        for (int i = 0; i < Mes; i++) {
+       /* for (int i = 0; i < Mes; i++) {
             double x = -Math.log(Math.random()) / lambda; // промежуток времени перед этим сообщением
             int a = Math.round(new Double((M - 1) * Math.random()).floatValue()); // номер абонента, у которого это сообщение
             time.add(new Message(x, a));
-        }
-        System.out.println("time: " + time);
+        }*/
+//        System.out.println("time: " + time);
 
         double start = 0;
         // считаем задержку
@@ -163,17 +176,23 @@ public class Main {
             d = D1 + D2 + 1; // общая задержка
             if ((start + d) <= end[target]) //если нужное окно занято
                 d = end[target] + M - start;
+            delays.add(d);
 
             end[target] = start + d;
 
-            System.out.println(i);
-            System.out.println("start = " + start);
-            System.out.println("window № " + window);
-            System.out.println("target = " + target);
-            System.out.println("end = " + end[window]);
-            System.out.println("d = " + d);
-            System.out.println();
+//            System.out.println(i);
+//            System.out.println("start = " + start);
+//            System.out.println("window № " + window);
+//            System.out.println("target = " + target);
+//            System.out.println("end = " + end[window]);
+//            System.out.println("d = " + d);
+//            System.out.println();
         }
+//        System.out.println("delays: " + delays);
+
+        double D = 0;
+        for(Double d : delays) D += d;
+        System.out.println("d (pract) = " + D / Mes);
 
     }
 
