@@ -3,29 +3,57 @@
  * + лаба3 - доступ с разделением времени (Time Division Multiple Access)
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
 
-public class Main {
-    public static void main(String[] args) {
-        double[] lambda = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
-        for (double l : lambda) { //допуски
-//            async(l);
+import org.knowm.xchart.*;
+import org.knowm.xchart.style.Styler;
 
-            //подать одинаковый поток
+public class Main {
+    public static void main(String[] args) throws IOException {
+        double[] lambda = {0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99};
+        int[] subscribers = {1, 2, 3, 4, 5, 7, 9, 10, 20, 50};
+        double[][] data = new double[subscribers.length + 1][lambda.length];
+        int j = 0;
+        XYChart chart = new XYChart(700, 600);
+
+        for (double l : lambda) {
+            //подаем одинаковый поток
+            int count = 100000;
+            double x = 0;
             ArrayList<Double> time = new ArrayList<>();
-            ArrayList<Message> time1 = new ArrayList<>();
-            int count = 100000, M = 4;
-            for (int i = 0; i < count; i++){
-                double x = -Math.log(Math.random()) / l;
-                int a = Math.round(new Double((M - 1) * Math.random()).floatValue());
+            ArrayList<ArrayList<Message>> times = new ArrayList<>();
+            for (int k = 0; k < subscribers.length; k++)
+                times.add(new ArrayList<Message>());
+
+            for (int i = 0; i < count; i++) { //создание потока
+                x = -Math.log(Math.random()) / l;
                 time.add(x);
-                time1.add(new Message(x, a));
+                for (int k = 0; k < subscribers.length; k++) {
+                    int M = subscribers[k];
+                    int a = Math.round(new Double((M - 1) * Math.random()).floatValue());
+                    times.get(k).add(new Message(x, a));
+                }
             }
 
-            sync(l, time, count);
-            TDMA(l, M, time1, count);
+            data[0][j] = sync(l, time, count);
+            for (int k = 0; k < subscribers.length; k++) {
+                int M = subscribers[k];
+                data[k+1][j] = TDMA(l, M, times.get(k), count);
+            }
+            j++;
         }
 
+        chart.addSeries("sync system", lambda, data[0]);
+        for (int k = 0; k < subscribers.length; k++)
+        chart.addSeries("TDMA, M = "+subscribers[k],lambda, data[k+1]);
+        chart.setTitle("delays");
+        chart.setXAxisTitle("Lambda");
+        chart.setYAxisTitle("d");
+        chart.getStyler().setLegendPosition(Styler.LegendPosition.InsideNW);
+        chart.getStyler().setYAxisLogarithmic(true);
+        BitmapEncoder.saveBitmap(chart, "delays", BitmapEncoder.BitmapFormat.BMP);
+        new SwingWrapper(chart).displayChart();// Show it
     }
 
     private static void async(double lambda) {
@@ -87,7 +115,7 @@ public class Main {
 
     }
 
-    private static void sync(double lambda, ArrayList<Double> t, int count) {
+    private static double sync(double lambda, ArrayList<Double> t, int count) {
         int M = count; //кол-во сообщений
         ArrayList<Double> time = t;//new ArrayList<>(); //время между появлениями сообщений
         ArrayList<Double> delays = new ArrayList<>(); //время пребывания сообщений в сист
@@ -134,16 +162,17 @@ public class Main {
         double N = 0;
         for (Integer i : countN) N += i;
 
-        System.out.println("\nSync system. Lambda = " + lambda);
-        System.out.println("d (theory) = " + d_th);
-        System.out.println("d (pract) = " + D / M);
+//        System.out.println("\nSync system. Lambda = " + lambda);
+//        System.out.println("d (theory) = " + d_th);
+//        System.out.println("d (pract) = " + D / M);
 
 //        System.out.println("N (theory) = " + N_th);
 //        System.out.println("N (pract) = " + N / countN.size());
+        return D / M;
     }
 
     //доступ с разделением времени, M -кол-во абонентов
-    private static void TDMA(double lambda, int M, ArrayList<Message> t, int count) {
+    private static double TDMA(double lambda, int M, ArrayList<Message> t, int count) {
 
         int Mes = count; //кол-во сообщений
         ArrayList<Message> time = t;//new ArrayList<>(); //время между появлениями сообщений
@@ -191,9 +220,10 @@ public class Main {
 //        System.out.println("delays: " + delays);
 
         double D = 0;
-        for(Double d : delays) D += d;
-        System.out.println("d (pract) = " + D / Mes);
+        for (Double d : delays) D += d;
+//        System.out.println("d (pract) = " + D / Mes);
 
+        return D / Mes;
     }
 
 
