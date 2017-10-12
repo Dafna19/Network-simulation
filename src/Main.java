@@ -16,6 +16,8 @@ public class Main {
         double[][] data = new double[subscribers.length + 1][lambda.length];
         int j = 0;
         XYChart chart = new XYChart(700, 600);
+        XYChart chartN = new XYChart(700, 600);
+        double[][] dataN = new double[subscribers.length + 1][lambda.length];
 
         for (double l : lambda) {
             //подаем одинаковый поток
@@ -36,17 +38,21 @@ public class Main {
                 }
             }
 
-            data[0][j] = sync(l, time, count);
+            dataN[0][j] = sync(l, time, count).N;
             for (int k = 0; k < subscribers.length; k++) {
                 int M = subscribers[k];
-                data[k+1][j] = TDMA(l, M, times.get(k), count);
+                Data temp = TDMA(l, M, times.get(k), count);
+                data[k + 1][j] = temp.delay;
+                dataN[k + 1][j] = temp.N;
             }
             j++;
         }
 
+        //график задержки
+        /*
         chart.addSeries("sync system", lambda, data[0]);
         for (int k = 0; k < subscribers.length; k++)
-        chart.addSeries("TDMA, M = "+subscribers[k],lambda, data[k+1]);
+            chart.addSeries("TDMA, M = " + subscribers[k], lambda, data[k + 1]);
         chart.setTitle("delays");
         chart.setXAxisTitle("Lambda");
         chart.setYAxisTitle("d");
@@ -54,6 +60,18 @@ public class Main {
         chart.getStyler().setYAxisLogarithmic(true);
         BitmapEncoder.saveBitmap(chart, "delays", BitmapEncoder.BitmapFormat.BMP);
         new SwingWrapper(chart).displayChart();// Show it
+        */
+        //график среднего кол-ва сообщений
+        chartN.addSeries("sync system", lambda, dataN[0]);
+        for (int k = 0; k < subscribers.length; k++)
+            chartN.addSeries("TDMA, M = " + subscribers[k], lambda, dataN[k + 1]);
+        chartN.setTitle("Messages");
+        chartN.setXAxisTitle("Lambda");
+        chartN.setYAxisTitle("N");
+        chartN.getStyler().setLegendPosition(Styler.LegendPosition.InsideNW);
+        chartN.getStyler().setYAxisLogarithmic(true);
+        BitmapEncoder.saveBitmap(chartN, "N", BitmapEncoder.BitmapFormat.BMP);
+        new SwingWrapper(chartN).displayChart();
     }
 
     private static void async(double lambda) {
@@ -115,7 +133,7 @@ public class Main {
 
     }
 
-    private static double sync(double lambda, ArrayList<Double> t, int count) {
+    private static Data sync(double lambda, ArrayList<Double> t, int count) {
         int M = count; //кол-во сообщений
         ArrayList<Double> time = t;//new ArrayList<>(); //время между появлениями сообщений
         ArrayList<Double> delays = new ArrayList<>(); //время пребывания сообщений в сист
@@ -168,16 +186,18 @@ public class Main {
 
 //        System.out.println("N (theory) = " + N_th);
 //        System.out.println("N (pract) = " + N / countN.size());
-        return D / M;
+        return new Data(D / M, N / countN.size());
     }
 
     //доступ с разделением времени, M -кол-во абонентов
-    private static double TDMA(double lambda, int M, ArrayList<Message> t, int count) {
+    private static Data TDMA(double lambda, int M, ArrayList<Message> t, int count) {
 
         int Mes = count; //кол-во сообщений
         ArrayList<Message> time = t;//new ArrayList<>(); //время между появлениями сообщений
         ArrayList<Double> delays = new ArrayList<>(); //время пребывания сообщений в сист
         double[] end = new double[M]; //время выхода последнего сообщения для каждого Абонента
+        double N = 0; //кол-во сообщ. в системе
+
 
        /* for (int i = 0; i < Mes; i++) {
             double x = -Math.log(Math.random()) / lambda; // промежуток времени перед этим сообщением
@@ -208,6 +228,7 @@ public class Main {
             delays.add(d);
 
             end[target] = start + d;
+            N = N + Math.ceil(d); //+= сколько занимает окон
 
 //            System.out.println(i);
 //            System.out.println("start = " + start);
@@ -222,8 +243,14 @@ public class Main {
         double D = 0;
         for (Double d : delays) D += d;
 //        System.out.println("d (pract) = " + D / Mes);
+        double cur, max = 0;
+        for (int i = 0; i < M; i++) {
+            cur = end[i];
+            if (cur > max) max = cur; //number of frames
+        }
+        N = N / max; //среднее кол-во сообщений в системе
 
-        return D / Mes;
+        return new Data(D / Mes, N);
     }
 
 
@@ -241,4 +268,14 @@ public class Main {
         }
     }
 
+    //для возращаемых значений
+    private static class Data {
+        double delay;
+        double N;
+
+        Data(double delay, double N) {
+            this.delay = delay;
+            this.N = N;
+        }
+    }
 }
